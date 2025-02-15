@@ -6,13 +6,15 @@ from azure.storage.blob import BlobServiceClient
 import azure.functions as func
 from scipy.sparse import csr_matrix, vstack, hstack
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configurer la journalisation
 logging.basicConfig(level=logging.INFO)
 
 # Variables globales
-
-
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "input"
 

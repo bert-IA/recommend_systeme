@@ -6,12 +6,15 @@ from azure.storage.blob import BlobServiceClient
 import azure.functions as func
 from scipy.sparse import csr_matrix, vstack, hstack
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configurer la journalisation
 logging.basicConfig(level=logging.INFO)
 
 # Variables globales
-
 
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = "input"
@@ -77,10 +80,8 @@ def add_new_user(user_id, article_clicks, user_item_matrix, article_id_map):
     logging.info(f"Adding new user with ID {user_id}")
     # Calculer la moyenne des clics de l'utilisateur
     mean_clicks = np.mean([clicks for article_id, clicks in article_clicks.items()])
-    
     # Créer une nouvelle ligne pour le nouvel utilisateur
     new_user_row = np.zeros(user_item_matrix.shape[1])
-    
     for article_id, clicks in article_clicks.items():
         article_idx = article_id_map.get(article_id, None)
         if article_idx is not None:
