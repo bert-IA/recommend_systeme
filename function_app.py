@@ -9,6 +9,8 @@ import os
 import io
 from dotenv import load_dotenv
 from implicit.als import AlternatingLeastSquares
+from azure.eventgrid import EventGridPublisherClient, EventGridEvent
+from azure.core.credentials import AzureKeyCredential
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,12 +20,23 @@ logging.basicConfig(level=logging.INFO)
 
 # Variables globales
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+EVENT_GRID_TOPIC_ENDPOINT = os.getenv("EVENT_GRID_TOPIC_ENDPOINT")
+EVENT_GRID_TOPIC_KEY = os.getenv("EVENT_GRID_TOPIC_KEY")
+
 if not CONNECTION_STRING:
     logging.error("Azure Storage connection string is not set.")
 else:
     logging.info(f"Azure Storage connection string: {CONNECTION_STRING}")
 
+if not EVENT_GRID_TOPIC_ENDPOINT or not EVENT_GRID_TOPIC_KEY:
+    logging.error("Event Grid topic endpoint or key is not set.")
+else:
+    logging.info(f"Event Grid topic endpoint: {EVENT_GRID_TOPIC_ENDPOINT}")
+
 CONTAINER_NAME = "input"
+
+# Définir l'application Azure Functions
+app = func.FunctionApp()
 
 # Charger le modèle, les données utilisateur-article et les mappings
 def load_model_and_data():
@@ -50,7 +63,6 @@ def load_model_and_data():
     user_id_map = json.loads(user_id_map_data)
     user_id_map = {int(k): v for k, v in user_id_map.items()}  # Convertir les clés en entiers
     logging.info("User ID map loaded successfully")
-    logging.info(f"user_id_map: {user_id_map}")
     
     # Charger article_id_map
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob="article_id_map.json")
@@ -235,8 +247,16 @@ def add_new_article(article_id, user_item_matrix, article_id_map, article_idx_ma
 
     return user_item_matrix, article_id_map, article_idx_map
 
-# Définir l'application Azure Functions
-app = func.FunctionApp()
+# Publier des événements dans Event Grid
+def publish_event(event_type, data):
+    event_grid_client = EventGridPublisherClient(EVENT_GRID_TOPIC_ENDPOINT, AzureKeyCredential(EVENT_GRID_TOPIC_KEY))
+    event = EventGridEvent(
+        subject="RecommenderSystem",
+        event_type=event_type,
+        data=data,
+        data_version="1.0"
+    )
+    event_grid_client.send([event])
 
 @app.function_name(name="HttpTrigger")
 @app.route(route="recommendation", methods=["GET", "POST"])
@@ -268,8 +288,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             user_item_matrix, user_id_map, new_user_id = add_new_user(article_clicks, user_item_matrix, article_id_map, user_id_map)
             save_user_item_matrix(user_item_matrix, user_id_map)
             
-            # Réentraîner et sauvegarder le modèle avec la matrice mise à jour
-            model = retrain_and_save_model(user_item_matrix, user_id_map)
+            # Publier un événement pour le réentraînement du modèle
+            publish_event("NewUserAdded", {"user_id": new_user_id})
             
             logging.info(f"User {new_user_id} added successfully.")
             return func.HttpResponse(f"User {new_user_id} added successfully.")
@@ -285,8 +305,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             user_item_matrix, article_id_map, article_idx_map = add_new_article(article_id, user_item_matrix, article_id_map, article_idx_map)
             save_user_item_matrix(user_item_matrix, user_id_map)
             
-            # Réentraîner et sauvegarder le modèle avec la matrice mise à jour
-            model = retrain_and_save_model(user_item_matrix, user_id_map)
+            # Publier un événement pour le réentraînement du modèle
+            publish_event("NewArticleAdded", {"article_id": article_id})
             
             logging.info(f"Article {article_id} added successfully.")
             return func.HttpResponse(f"Article {article_id} added successfully.")
