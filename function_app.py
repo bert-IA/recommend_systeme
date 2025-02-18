@@ -207,6 +207,34 @@ def add_new_user(article_clicks, user_item_matrix, article_id_map, user_id_map):
     
     return user_item_matrix, user_id_map, new_user_id
 
+def add_new_article(article_id, user_item_matrix, article_id_map, article_idx_map):
+    # Vérifier si l'article existe déjà
+    if article_id in article_id_map:
+        logging.error(f"Article with ID {article_id} already exists")
+        raise ValueError(f"Article with ID {article_id} already exists")
+
+    # Générer un nouvel article_id unique
+    if article_id_map:
+        new_article_idx = max(article_id_map.values()) + 1
+    else:
+        new_article_idx = 0  # Commencer à 0 si article_id_map est vide
+
+    logging.info(f"Adding new article with ID {article_id} and index {new_article_idx}")
+
+    # Ajouter l'article aux mappings
+    article_id_map[article_id] = new_article_idx
+    article_idx_map[new_article_idx] = article_id
+
+    # Ajouter une nouvelle colonne pour le nouvel article
+    new_article_col = csr_matrix((user_item_matrix.shape[0], 1))
+    user_item_matrix = hstack([user_item_matrix, new_article_col])
+
+    logging.info(f"New article with ID {article_id} added successfully")
+    logging.info(f"article_id_map[{article_id}] = {article_id_map[article_id]}")
+    logging.info(f"user_item_matrix shape: {user_item_matrix.shape}")
+
+    return user_item_matrix, article_id_map, article_idx_map
+
 # Définir l'application Azure Functions
 app = func.FunctionApp()
 
@@ -252,11 +280,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     elif action == 'add_article' and article_id:
         logging.info(f"Adding article with ID {article_id}")
         article_id = int(article_id)
-        # Ajouter une nouvelle colonne pour le nouvel article
-        new_article_col = csr_matrix((user_item_matrix.shape[0], 1))
-        user_item_matrix = hstack([user_item_matrix, new_article_col])
-        save_user_item_matrix(user_item_matrix, user_id_map)
-        return func.HttpResponse(f"Article {article_id} added successfully.")
+        try:
+            # Ajouter le nouvel article
+            user_item_matrix, article_id_map, article_idx_map = add_new_article(article_id, user_item_matrix, article_id_map, article_idx_map)
+            save_user_item_matrix(user_item_matrix, user_id_map)
+            
+            # Réentraîner et sauvegarder le modèle avec la matrice mise à jour
+            model = retrain_and_save_model(user_item_matrix, user_id_map)
+            
+            logging.info(f"Article {article_id} added successfully.")
+            return func.HttpResponse(f"Article {article_id} added successfully.")
+        except ValueError as e:
+            logging.error(str(e))
+            return func.HttpResponse(str(e), status_code=400)
 
     else:
         logging.error("Invalid action or missing parameters")
