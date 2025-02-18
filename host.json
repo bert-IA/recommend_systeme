@@ -6,6 +6,11 @@
         "isEnabled": true,
         "excludedTypes": "Request"
       }
+    },
+    "logLevel": {
+      "Function.HttpTrigger": "Information",
+      "Function.EventGridTrigger": "Information",
+      "default": "Information"
     }
   },
   "extensionBundle": {
