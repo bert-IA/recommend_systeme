@@ -4,6 +4,10 @@
 spicy
 implicit==0.7.2
 numpy==1.22.4
+joblib==1.4.2
+python-dotenv
 azure-functions
 azure-storage-blob
-joblib==1.4.2
+azure-eventgrid
+azure-core
+python-dotenv
