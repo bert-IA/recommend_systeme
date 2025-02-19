@@ -321,3 +321,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
              "Please pass a valid action (recommend, add_user, add_article) and corresponding parameters (user_id, article_id)",
              status_code=400
         )
+        
+@app.function_name(name="EventGridTrigger")
+@app.event_grid_trigger(arg_name="event")
+def event_grid_trigger(event: func.EventGridEvent):
+    logging.info('Python EventGrid trigger function processed an event: %s', event.get_json())
+    
+    model, user_item_matrix, user_id_map, article_id_map, article_idx_map = load_model_and_data()
+    model = retrain_and_save_model(user_item_matrix, user_id_map)
+    
+    logging.info("Model retrained and saved successfully.")
