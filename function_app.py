@@ -4,6 +4,8 @@ import json
 import numpy as np
 from azure.storage.blob import BlobServiceClient
 import azure.functions as func
+from azure.eventgrid import EventGridPublisherClient, EventGridEvent
+from azure.core.credentials import AzureKeyCredential
 from scipy.sparse import csr_matrix, vstack, hstack
 import os
 import io
@@ -18,6 +20,9 @@ logging.basicConfig(level=logging.INFO)
 
 # Variables globales
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+EVENT_GRID_TOPIC_ENDPOINT = os.getenv("EVENT_GRID_TOPIC_ENDPOINT")
+EVENT_GRID_TOPIC_KEY = os.getenv("EVENT_GRID_TOPIC_KEY")
+
 if not CONNECTION_STRING:
     logging.error("Azure Storage connection string is not set.")
 else:
@@ -268,10 +273,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             user_item_matrix, user_id_map, new_user_id = add_new_user(article_clicks, user_item_matrix, article_id_map, user_id_map)
             save_user_item_matrix(user_item_matrix, user_id_map)
             
-            # Réentraîner et sauvegarder le modèle avec la matrice mise à jour
-            model = retrain_and_save_model(user_item_matrix, user_id_map)
+            # Émettre un événement Event Grid pour réentraîner le modèle
+            event = EventGridEvent(
+                subject="NewUserAdded",
+                event_type="NewUserAdded",
+                data={"user_id": new_user_id},
+                data_version="1.0"
+            )
+            credential = AzureKeyCredential(EVENT_GRID_TOPIC_KEY)
+            client = EventGridPublisherClient(EVENT_GRID_TOPIC_ENDPOINT, credential)
+            client.send(event)
             
-            logging.info(f"User {new_user_id} added successfully.")
+            logging.info(f"User {new_user_id} added successfully and event emitted.")
             return func.HttpResponse(f"User {new_user_id} added successfully.")
         except ValueError as e:
             logging.error(str(e))
@@ -285,10 +298,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             user_item_matrix, article_id_map, article_idx_map = add_new_article(article_id, user_item_matrix, article_id_map, article_idx_map)
             save_user_item_matrix(user_item_matrix, user_id_map)
             
-            # Réentraîner et sauvegarder le modèle avec la matrice mise à jour
-            model = retrain_and_save_model(user_item_matrix, user_id_map)
+            # Émettre un événement Event Grid pour réentraîner le modèle
+            event = EventGridEvent(
+                subject="NewArticleAdded",
+                event_type="NewArticleAdded",
+                data={"article_id": article_id},
+                data_version="1.0"
+            )
+            credential = AzureKeyCredential(EVENT_GRID_TOPIC_KEY)
+            client = EventGridPublisherClient(EVENT_GRID_TOPIC_ENDPOINT, credential)
+            client.send(event)
             
-            logging.info(f"Article {article_id} added successfully.")
+            logging.info(f"Article {article_id} added successfully and event emitted.")
             return func.HttpResponse(f"Article {article_id} added successfully.")
         except ValueError as e:
             logging.error(str(e))
