@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO)
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 EVENT_GRID_TOPIC_ENDPOINT = os.getenv("EVENT_GRID_TOPIC_ENDPOINT")
 EVENT_GRID_TOPIC_KEY = os.getenv("EVENT_GRID_TOPIC_KEY")
+CONTAINER_NAME = "input"
 
 if not CONNECTION_STRING:
     logging.error("Azure Storage connection string is not set.")
