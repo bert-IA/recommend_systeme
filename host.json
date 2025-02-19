@@ -8,8 +8,13 @@
     },
     "logLevel": {
       "Function.HttpTrigger": "Information",
-      "Function.EventGridTrigger": "Information",
-      "default": "Information"
+      "Function.EventGridTrigger": "Information"
+    }
+  },
+  "extensions": {
+    "eventGrid": {
+      "maxEventsPerBatch": 10,
+      "maxBatchSize": 100
     }
   }
 }

@@ -1,13 +1,13 @@
 import logging
+import os
 import pickle
 import json
 import numpy as np
-from azure.storage.blob import BlobServiceClient
 import azure.functions as func
+from azure.storage.blob import BlobServiceClient
 from azure.eventgrid import EventGridPublisherClient, EventGridEvent
 from azure.core.credentials import AzureKeyCredential
 from scipy.sparse import csr_matrix, vstack, hstack
-import os
 import io
 from dotenv import load_dotenv
 from implicit.als import AlternatingLeastSquares
@@ -56,8 +56,7 @@ def load_model_and_data():
     user_id_map = json.loads(user_id_map_data)
     user_id_map = {int(k): v for k, v in user_id_map.items()}  # Convertir les clés en entiers
     logging.info("User ID map loaded successfully")
-    logging.info(f"user_id_map: {user_id_map}")
-    
+        
     # Charger article_id_map
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob="article_id_map.json")
     article_id_map_data = blob_client.download_blob().readall()
