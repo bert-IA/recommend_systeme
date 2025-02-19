@@ -1,9 +1,7 @@
+import requests
 import json
-from function_app import event_grid_trigger
-from azure.functions import EventGridEvent
 
-# Créer un événement Event Grid simulé
-event_data = {
+event = {
     "id": "1",
     "eventType": "NewUserAdded",
     "subject": "NewUserAdded",
@@ -11,19 +9,19 @@ event_data = {
     "data": {
         "user_id": 322884
     },
-    "dataVersion": "1.0",
-    "topic": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.EventGrid/topics/{topic-name}"
+    "dataVersion": "1.0"
 }
 
-event = EventGridEvent(
-    id=event_data["id"],
-    subject=event_data["subject"],
-    data=event_data["data"],
-    event_type=event_data["eventType"],
-    event_time=event_data["eventTime"],
-    data_version=event_data["dataVersion"],
-    topic=event_data["topic"]
+headers = {
+    "aeg-sas-key": "7R9WAKSNVkRTbosfzOZiortUGXTxOe3KOyb9NXi10AviZHzFpXv6JQQJ99BBAC5T7U2XJ3w3AAABAZEGAiQg",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://myeventgridtopic.francecentral-1.eventgrid.azure.net/api/events",
+    headers=headers,
+    data=json.dumps([event])
 )
 
-# Appeler directement la fonction Event Grid Trigger
-event_grid_trigger(event)
+print(response.status_code)
+print(response.text)

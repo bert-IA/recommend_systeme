@@ -10,11 +10,5 @@
       "Function.HttpTrigger": "Information",
       "Function.EventGridTrigger": "Information"
     }
-  },
-  "extensions": {
-    "eventGrid": {
-      "maxEventsPerBatch": 10,
-      "maxBatchSize": 100
-    }
   }
 }
