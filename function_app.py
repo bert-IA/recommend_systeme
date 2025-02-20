@@ -29,8 +29,6 @@ if not CONNECTION_STRING:
 else:
     logging.info(f"Azure Storage connection string: {CONNECTION_STRING}")
 
-CONTAINER_NAME = "input"
-
 # Charger le modèle, les données utilisateur-article et les mappings
 def load_model_and_data():
     logging.info("Loading model and data from Azure Blob Storage")
