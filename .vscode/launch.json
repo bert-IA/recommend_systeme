@@ -2,6 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Attach to Python Functions",
             "type": "debugpy",
             "request": "attach",
@@ -10,6 +17,13 @@
                 "port": 9091
             },
             "preLaunchTask": "func: host start"
+        },
+        {
+            "name": "Python: Run Tests",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests",
+            "console": "integratedTerminal"
         }
     ]
 }
