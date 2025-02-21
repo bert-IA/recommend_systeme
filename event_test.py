@@ -1,27 +1,19 @@
-import requests
-import json
+from azure.eventgrid import EventGridPublisherClient, EventGridEvent
+from azure.core.credentials import AzureKeyCredential
+import os
 
-event = {
-    "id": "1",
-    "eventType": "NewUserAdded",
-    "subject": "NewUserAdded",
-    "eventTime": "2025-02-19T14:10:54Z",
-    "data": {
-        "user_id": 322884
-    },
-    "dataVersion": "1.0"
-}
+EVENT_GRID_TOPIC_ENDPOINT = os.getenv("EVENT_GRID_TOPIC_ENDPOINT")
+EVENT_GRID_TOPIC_KEY = os.getenv("EVENT_GRID_TOPIC_KEY")
 
-headers = {
-    "aeg-sas-key": "7R9WAKSNVkRTbosfzOZiortUGXTxOe3KOyb9NXi10AviZHzFpXv6JQQJ99BBAC5T7U2XJ3w3AAABAZEGAiQg",
-    "Content-Type": "application/json"
-}
-
-response = requests.post(
-    "https://myeventgridtopic.francecentral-1.eventgrid.azure.net/api/events",
-    headers=headers,
-    data=json.dumps([event])
+event = EventGridEvent(
+    subject="NewUserAdded",
+    event_type="NewUserAdded",
+    data={"user_id": 123},
+    data_version="1.0"
 )
 
-print(response.status_code)
-print(response.text)
+credential = AzureKeyCredential(EVENT_GRID_TOPIC_KEY)
+client = EventGridPublisherClient(EVENT_GRID_TOPIC_ENDPOINT, credential)
+client.send(event)
+
+print("Event sent successfully.")
