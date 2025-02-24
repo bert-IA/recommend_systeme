@@ -94,7 +94,7 @@ def recommend(user_id, sparse_user_item, model, user_id_map, article_idx_map, nu
     recommendations = np.vectorize(article_idx_map.get)(item_ids)
     logging.info(f"Recommendations: {recommendations}")
     
-    return recommendations 
+    return recommendations.tolist()  # Convertir en liste Python
 
 # Sauvegarder la matrice mise à jour
 def save_user_item_matrix(user_item_matrix, user_id_map):
@@ -259,10 +259,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         try:
             recommendations = recommend(int(user_id), user_item_matrix, model, user_id_map, article_idx_map, num_items=5)
             logging.info(f"Recommended items for user {user_id}: {recommendations}")
-            return func.HttpResponse(f"Recommended items for user {user_id}: {recommendations}")
+            return func.HttpResponse(json.dumps({"recommendations": recommendations}), mimetype="application/json")
         except ValueError as e:
             logging.error(str(e))
-            return func.HttpResponse(str(e), status_code=404)
+            return func.HttpResponse(json.dumps({"error": str(e)}), status_code=404, mimetype="application/json")
 
     elif action == 'add_user':
         logging.info(f"Adding new user")
@@ -283,10 +283,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             client.send(event)
             
             logging.info(f"User {new_user_id} added successfully and event emitted.")
-            return func.HttpResponse(f"User {new_user_id} added successfully.")
+            return func.HttpResponse(json.dumps({"message": f"User {new_user_id} added successfully."}), mimetype="application/json")
         except ValueError as e:
             logging.error(str(e))
-            return func.HttpResponse(str(e), status_code=400)
+            return func.HttpResponse(json.dumps({"error": str(e)}), status_code=400, mimetype="application/json")
 
     elif action == 'add_article' and article_id:
         logging.info(f"Adding article with ID {article_id}")
@@ -308,39 +308,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             client.send(event)
             
             logging.info(f"Article {article_id} added successfully and event emitted.")
-            return func.HttpResponse(f"Article {article_id} added successfully.")
+            return func.HttpResponse(json.dumps({"message": f"Article {article_id} added successfully."}), mimetype="application/json")
         except ValueError as e:
             logging.error(str(e))
-            return func.HttpResponse(str(e), status_code=400)
+            return func.HttpResponse(json.dumps({"error": str(e)}), status_code=400, mimetype="application/json")
 
     else:
         logging.error("Invalid action or missing parameters")
         return func.HttpResponse(
-             "Please pass a valid action (recommend, add_user, add_article) and corresponding parameters (user_id, article_id)",
-             status_code=400
+             json.dumps({"error": "Please pass a valid action (recommend, add_user, add_article) and corresponding parameters (user_id, article_id)"}),
+             status_code=400,
+             mimetype="application/json"
         )
-        
-@app.function_name(name="EventGridTrigger")
-@app.event_grid_trigger(arg_name="event")
-def event_grid_trigger(event: func.EventGridEvent):
-    logging.info('Python EventGrid trigger function processed an event: %s', event.get_json())
-    try:
-        event_data = event.get_json()
-        user_id = event_data.get("user_id")
-        if user_id:
-            logging.info(f"Retraining model for new user ID {user_id}")
-        else:
-            article_id = event_data.get("article_id")
-            if article_id:
-                logging.info(f"Retraining model for new article ID {article_id}")
-            else:
-                logging.error("Event data does not contain user_id or article_id")
-                
-        
-        # Réentraîner le modèle
-        model, user_item_matrix, user_id_map, article_id_map, article_idx_map = load_model_and_data()
-        model = retrain_and_save_model(user_item_matrix, user_id_map)
-        logging.info("Model retrained and saved successfully.")
-    except Exception as e:
-        logging.error(f"Error retraining model: {e}")
-        
