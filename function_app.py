@@ -320,3 +320,29 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
              status_code=400,
              mimetype="application/json"
         )
+        
+        
+@app.function_name(name="EventGridTrigger")
+@app.event_grid_trigger(arg_name="event")
+def event_grid_trigger(event: func.EventGridEvent):
+    logging.info('Python EventGrid trigger function processed an event: %s', event.get_json())
+    try:
+        event_data = event.get_json()
+        user_id = event_data.get("user_id")
+        if user_id:
+            logging.info(f"Retraining model for new user ID {user_id}")
+        else:
+            article_id = event_data.get("article_id")
+            if article_id:
+                logging.info(f"Retraining model for new article ID {article_id}")
+            else:
+                logging.error("Event data does not contain user_id or article_id")
+                
+        
+        # Réentraîner le modèle
+        model, user_item_matrix, user_id_map, article_id_map, article_idx_map = load_model_and_data()
+        model = retrain_and_save_model(user_item_matrix, user_id_map)
+        logging.info("Model retrained and saved successfully.")
+    except Exception as e:
+        logging.error(f"Error retraining model: {e}")
+        
