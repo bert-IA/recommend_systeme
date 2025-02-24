@@ -34,7 +34,10 @@ def recommendations():
         headers = {"x-functions-key": api_key}
         response = requests.get(f"https://recommendals.azurewebsites.net/api/recommendation?action=recommend&user_id={user_id}", headers=headers)
         if response.status_code == 200:
-            st.write(f"Recommandations pour l'utilisateur {user_id}: {response.json()}")
+            recommendations = response.json().get("recommendations", [])
+            st.write(f"Recommandations pour l'utilisateur {user_id}:")
+            for rec in recommendations:
+                st.write(f"- Article ID: {rec}")
         else:
             st.write(f"Erreur: {response.text}")
             logging.error(f"Error fetching recommendations: {response.text}")
@@ -49,7 +52,8 @@ def add_user():
             headers = {"x-functions-key": api_key}
             response = requests.post("https://recommendals.azurewebsites.net/api/recommendation?action=add_user", json={"article_clicks": article_clicks_dict}, headers=headers)
             if response.status_code == 200:
-                st.write(f"Utilisateur ajouté avec succès: {response.json()}")
+                user_id = response.json().get("message").split()[1].strip('.')
+                st.write(f"Utilisateur ajouté avec succès : user_id = {user_id}")
             else:
                 st.write(f"Erreur: {response.text}")
                 logging.error(f"Error adding user: {response.text}")
@@ -65,7 +69,7 @@ def add_article():
         headers = {"x-functions-key": api_key}
         response = requests.post(f"https://recommendals.azurewebsites.net/api/recommendation?action=add_article&article_id={article_id}", headers=headers)
         if response.status_code == 200:
-            st.write(f"Article ajouté avec succès: {response.json()}")
+            st.write(f"Article ajouté avec succès : article_id = {article_id}")
         else:
             st.write(f"Erreur: {response.text}")
             logging.error(f"Error adding article: {response.text}")
