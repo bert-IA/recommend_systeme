@@ -94,7 +94,7 @@ def recommend(user_id, sparse_user_item, model, user_id_map, article_idx_map, nu
     recommendations = np.vectorize(article_idx_map.get)(item_ids)
     logging.info(f"Recommendations: {recommendations}")
     
-    return recommendations
+    return recommendations 
 
 # Sauvegarder la matrice mise à jour
 def save_user_item_matrix(user_item_matrix, user_id_map):
